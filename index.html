@@ -638,6 +638,62 @@
             }
         }
 
+    
+
+        /* VOCMapping - Vue globale monde : bouton compact au lieu du grand cartouche permanent */
+        #global-stats-toggle {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 38px;
+            padding: 8px 14px;
+            background: rgba(44, 62, 80, 0.94);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 999px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+            font-weight: 900;
+            font-size: 0.85em;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #global-stats-toggle:active {
+            transform: translateX(-50%) scale(0.97);
+        }
+
+        #global-stats-overlay.global-collapsed {
+            display: none !important;
+        }
+
+        @media (max-width: 900px) {
+            #global-stats-toggle {
+                top: 10px;
+                max-width: calc(100% - 24px);
+                min-height: 36px;
+                padding: 7px 12px;
+                font-size: 0.78em;
+            }
+
+            #global-stats-overlay {
+                top: 56px !important;
+                width: calc(100% - 24px) !important;
+                max-width: calc(100% - 24px) !important;
+                max-height: 62vh !important;
+                overflow-y: auto !important;
+                padding: 12px !important;
+                border-radius: 14px !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -759,6 +815,9 @@
 </div>
 
 <div id="map">
+    <button id="global-stats-toggle" onclick="toggleGlobalStatsPanel()" aria-label="Afficher les résultats monde">
+        🌍 Résultats monde
+    </button>
     <div id="global-stats-overlay">
         <div class="compliance-gauge" id="tooltip-compliance">
             <div class="gauge-title">
@@ -1339,6 +1398,23 @@
         save();
     }
 
+
+    function toggleGlobalStatsPanel() {
+        const overlay = document.getElementById('global-stats-overlay');
+        const btn = document.getElementById('global-stats-toggle');
+        if (!overlay || !btn) return;
+        const isOpen = overlay.style.display === "flex";
+        if (isOpen) {
+            overlay.style.display = "none";
+            btn.setAttribute('aria-label', 'Afficher les résultats monde');
+            btn.title = 'Afficher les résultats monde';
+        } else {
+            overlay.style.display = "flex";
+            btn.setAttribute('aria-label', 'Masquer les résultats monde');
+            btn.title = 'Masquer les résultats monde';
+        }
+    }
+
     function showGlobalView() {
         if (plumeLayer) map.removeLayer(plumeLayer);
         if (factoryMarker) map.removeLayer(factoryMarker);
@@ -1355,7 +1431,14 @@
 
         document.getElementById('site-controls').style.opacity = "0.3";
         document.getElementById('site-controls').style.pointerEvents = "none";
-        document.getElementById('global-stats-overlay').style.display = "flex";
+        document.getElementById('global-stats-overlay').style.display = "none";
+        const globalToggleBtn = document.getElementById('global-stats-toggle');
+        if (globalToggleBtn) {
+            globalToggleBtn.style.display = "flex";
+            globalToggleBtn.innerHTML = "🌍 Résultats monde";
+            globalToggleBtn.setAttribute('aria-label', 'Afficher les résultats monde');
+            globalToggleBtn.title = 'Afficher les résultats monde';
+        }
 
         map.flyTo([40, 5], 2);
 
@@ -1404,6 +1487,10 @@
             : 0;
 
         document.getElementById('gauge-value').innerText = pct + "%";
+        const globalToggleBtn2 = document.getElementById('global-stats-toggle');
+        if (globalToggleBtn2) {
+            globalToggleBtn2.innerHTML = "🌍 " + pct + "% sites maîtrisés ▾";
+        }
         document.getElementById('st-green').innerText = stats.green;
         document.getElementById('st-yellow').innerText = stats.yellow;
         document.getElementById('st-orange').innerText = stats.orange;
@@ -1563,6 +1650,10 @@
         document.getElementById('site-controls').style.opacity = "1";
         document.getElementById('site-controls').style.pointerEvents = "auto";
         document.getElementById('global-stats-overlay').style.display = "none";
+        const globalToggleBtn = document.getElementById('global-stats-toggle');
+        if (globalToggleBtn) {
+            globalToggleBtn.style.display = "none";
+        }
 
         globalMarkers.forEach(m => map.removeLayer(m));
         globalMarkers = [];
