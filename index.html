@@ -1,89 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr">
-manifest.json
-<meta name="theme-color" content="#2c3e50">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="VOCMapping">
-<link rel="apple-touch
 <head>
     <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width,
-      initial-scale=1,
-      viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Global VOC Monitoring - ATMOVOC Dashboard</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="VOCMapping">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-@media (max-width: 900px){
-
-body{
-    flex-direction:column;
-    height:auto;
-}
-
-#side-panel{
-    width:100%;
-    max-width:none;
-    box-sizing:border-box;
-    padding:12px;
-}
-
-#map{
-    width:100%;
-    height:55vh;
-}
-
-.header-container{
-    flex-direction:column;
-    gap:10px;
-}
-
-.btn-global{
-    font-size:15px;
-}
-
-select{
-    font-size:16px;
-    height:48px;
-}
-
-.input-number-box{
-    width:70px;
-}
-
-#global-stats-overlay{
-    width:95%;
-    max-height:80vh;
-    overflow-y:auto;
-}
-
-.stats-row{
-    flex-direction:column;
-    gap:10px;
-}
-
-.compliance-gauge{
-    flex-direction:column;
-    text-align:center;
-}
-
-.gauge-title{
-    text-align:center;
-}
-
-.status-container{
-    margin-top:15px;
-}
-
-.live-status{
-    font-size:0.9em;
-}
-}
-
     <style>
+
         body {
             margin: 0;
             padding: 0;
@@ -549,6 +482,162 @@ select{
             display: inline-block;
             margin-right: 5px;
         }
+    
+
+        /* VOCMapping Mobile PWA - Responsive smartphone */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                overflow-x: hidden;
+            }
+
+            #side-panel {
+                width: 100%;
+                max-width: none;
+                box-sizing: border-box;
+                padding: 12px;
+                order: 2;
+                box-shadow: none;
+                overflow-y: visible;
+            }
+
+            #map {
+                width: 100%;
+                height: 55vh;
+                min-height: 360px;
+                order: 1;
+                flex-grow: 0;
+            }
+
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            h2 {
+                font-size: 1.05em;
+                line-height: 1.2;
+            }
+
+            .btn-lang {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .btn-global {
+                font-size: 15px;
+                min-height: 48px;
+            }
+
+            .site-selector {
+                padding: 10px;
+            }
+
+            select {
+                font-size: 16px;
+                min-height: 48px;
+            }
+
+            .live-status {
+                font-size: 0.9em;
+            }
+
+            .reg-badge,
+            .kpi-badge,
+            .weight-badge,
+            .sensor-badge {
+                display: inline-block;
+                margin-top: 6px;
+                line-height: 1.25;
+            }
+
+            .input-number-box {
+                width: 74px;
+                min-height: 28px;
+                font-size: 14px;
+            }
+
+            input[type=range] {
+                min-height: 34px;
+            }
+
+            .weather-toggle-container {
+                min-height: 42px;
+            }
+
+            .w-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.72em;
+            }
+
+            .status-container {
+                margin-top: 15px;
+            }
+
+            .status-box {
+                font-size: 0.72em;
+                line-height: 1.25;
+            }
+
+            #global-stats-overlay {
+                top: 10px;
+                left: 50%;
+                width: 94%;
+                max-width: 94%;
+                max-height: 78vh;
+                overflow-y: auto;
+                padding: 10px;
+                box-sizing: border-box;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .stats-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                padding: 0;
+            }
+
+            .border-cols {
+                border-left: none;
+                border-right: none;
+                border-top: 1px solid #ecf0f1;
+                border-bottom: 1px solid #ecf0f1;
+                padding: 8px 0 !important;
+            }
+
+            .compliance-gauge {
+                flex-direction: column;
+                text-align: center;
+                gap: 4px;
+            }
+
+            .gauge-title {
+                text-align: center;
+                align-items: center;
+            }
+
+            .gauge-pct {
+                font-size: 1.8em;
+            }
+
+            .btn-exit-global {
+                min-height: 42px;
+                width: 100%;
+            }
+
+            .leaflet-control-zoom {
+                margin-bottom: 12px !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -1772,8 +1861,8 @@ select{
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js');
 }
-``
-    window.onload = init;
+
+window.onload = init;
 </script>
 
 </body>

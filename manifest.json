@@ -3,6 +3,7 @@
   "short_name": "VOCMapping",
   "description": "Global VOC Monitoring Renault",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2c3e50",
