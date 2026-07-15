@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="fr">
+manifest.json
+<meta name="theme-color" content="#2c3e50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VOCMapping">
+<link rel="apple-touch
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,
+      initial-scale=1,
+      viewport-fit=cover">
+    <title>Global VOC Monitoring - ATMOVOC Dashboard</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+@media (max-width: 900px){
+
+body{
+    flex-direction:column;
+    height:auto;
+}
+
+#side-panel{
+    width:100%;
+    max-width:none;
+    box-sizing:border-box;
+    padding:12px;
+}
+
+#map{
+    width:100%;
+    height:55vh;
+}
+
+.header-container{
+    flex-direction:column;
+    gap:10px;
+}
+
+.btn-global{
+    font-size:15px;
+}
+
+select{
+    font-size:16px;
+    height:48px;
+}
+
+.input-number-box{
+    width:70px;
+}
+
+#global-stats-overlay{
+    width:95%;
+    max-height:80vh;
+    overflow-y:auto;
+}
+
+.stats-row{
+    flex-direction:column;
+    gap:10px;
+}
+
+.compliance-gauge{
+    flex-direction:column;
+    text-align:center;
+}
+
+.gauge-title{
+    text-align:center;
+}
+
+.status-container{
+    margin-top:15px;
+}
+
+.live-status{
+    font-size:0.9em;
+}
+}
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            height: 100vh;
+            background: #f4f7f6;
+        }
+
+        #side-panel {
+            width: 460px;
+            background: #ffffff;
+            color: #333;
+            padding: 25px;
+            z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #map {
+            flex-grow: 1;
+            background: #1a1a1a;
+            position: relative;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.2em;
+            text-transform: uppercase;
+        }
+
+        .btn-lang {
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #2c3e50;
+            transition: 0.2s;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .btn-lang:hover {
+            background: #e0e6ed;
+        }
+
+        .lang-active {
+            opacity: 1;
+            font-size: 1.1em;
+            text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .lang-inactive {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .btn-global {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin: 5px 0 15px 0;
+        }
+
+        .btn-excel {
+            background: #27ae60;
+        }
+
+        .btn-excel:hover {
+            background: #219a52;
+        }
+
+        #global-stats-overlay {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            background: rgba(255,255,255,0.95);
+            padding: 8px 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid rgba(44,62,80,0.2);
+            max-width: 95%;
+        }
+
+        .compliance-gauge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: help;
+        }
+
+        .gauge-title {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+        }
+
+        .gauge-pct {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #27ae60;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .stats-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px 15px;
+            padding: 0 15px;
+        }
+
+        .border-cols {
+            border-left: 2px solid #ecf0f1;
+            border-right: 2px solid #ecf0f1;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8em;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .stat-value {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #2c3e50;
+        }
+
+        .avg-box {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .avg-title {
+            font-size: 0.75em;
+            font-weight: 800;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .avg-main {
+            font-size: 1.3em;
+            font-weight: 900;
+            color: #2c3e50;
+        }
+
+        .avg-sub {
+            font-size: 0.75em;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        .btn-exit-global {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .btn-exit-global:hover {
+            background: #c0392b;
+        }
+
+        @media (max-width: 1300px) {
+            .border-cols {
+                border: none;
+                padding: 0;
+            }
+        }
+
+        .site-selector {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-weight: bold;
+        }
+
+        .live-status {
+            background: #eef7fe;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            border-left: 5px solid #3498db;
+        }
+
+        .reg-badge,
+        .kpi-badge,
+        .weight-badge,
+        .sensor-badge {
+            display: inline-block;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .reg-badge {
+            background: #34495e;
+        }
+
+        .kpi-badge {
+            background: #9b59b6;
+            margin-left: 5px;
+        }
+
+        .weight-badge {
+            background: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        .sensor-badge {
+            margin-left: 5px;
+        }
+
+        .btn-toggle-incin {
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            padding: 4px 8px;
+            transition: 0.2s;
+        }
+
+        .incin-btn-ok {
+            background: #ecf0f1;
+            color: #7f8c8d;
+            border: 1px solid #bdc3c7;
+        }
+
+        .incin-btn-ko {
+            background: #e74c3c;
+            color: white;
+            border: 1px solid #c0392b;
+            box-shadow: 0 0 8px rgba(231,76,60,0.5);
+        }
+
+        .badge-incin-ko {
+            background: #e74c3c !important;
+            animation: pulseBg 2s infinite;
+        }
+
+        @keyframes pulseBg {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes pulseAlert {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        .alert-map-icon {
+            font-size: 16px;
+            line-height: 1;
+            text-align: center;
+            background: white;
+            border-radius: 50%;
+            padding: 3px;
+            border: 2px solid #e74c3c;
+            animation: pulseAlert 1.5s infinite;
+            transform: translate(8px, -20px);
+            width: 20px !important;
+            height: 20px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+
+        .group-title {
+            font-size: 0.75em;
+            font-weight: 800;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: block;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            font-size: 0.82em;
+            color: #444;
+            margin-bottom: 5px;
+        }
+
+        .input-number-box {
+            float: right;
+            width: 60px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-family: monospace;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .val-badge {
+            float: right;
+            background: #7f8c8d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+
+        .weather-toggle-container {
+            display: flex;
+            background: #ecf0f1;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid #bdc3c7;
+        }
+
+        .w-toggle {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            font-size: 0.7em;
+            font-weight: 800;
+            color: #7f8c8d;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .w-toggle.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .slider-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        .status-container {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .status-box {
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .bg-green { background: #2ecc71; color: white; }
+        .bg-yellow { background: #f1c40f; color: #333; }
+        .bg-orange { background: #e67e22; color: white; }
+        .bg-red { background: #e74c3c; color: white; }
+        .bg-blue { background: #3498db; color: white; }
+
+        .tech-note {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f1f3f5;
+            border-radius: 8px;
+        }
+
+        .tech-note h3 {
+            font-size: 0.75em;
+            margin: 0 0 10px 0;
+            color: #333;
+            text-transform: uppercase;
+        }
+
+        .tech-note p {
+            font-size: 0.65em;
+            margin: 0 0 6px 0;
+            line-height: 1.3;
+            color: #444;
+        }
+
+        .color-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="side-panel">
+    <div class="header-container">
+        <h2>ATMOVOC Monitoring 🌐</h2>
+        <button class="btn-lang" onclick="toggleLang()" title="Language Switch">
+            <span id="flag-fr" class="lang-active">🇫🇷 FR</span>
+            <span style="color: #bdc3c7;">|</span>
+            <span id="flag-en" class="lang-inactive">🇬🇧 EN</span>
+        </button>
+    </div>
+
+    <input type="file" id="excelUpload" accept=".xlsx, .xls, .xlsm" style="display: none;" onchange="handleExcelUpload(event)">
+    <button class="btn-global btn-excel" onclick="document.getElementById('excelUpload').click()" id="btn-import">📁 IMPORTER BILAN COV</button>
+    <button class="btn-global" onclick="showGlobalView()" id="btn-global">🌍 VUE GLOBALE MONDE</button>
+
+    <div id="site-controls">
+        <div class="site-selector">
+            <select id="siteSelect" onchange="changeSite()">
+                <optgroup label="EUROPE" id="opt-eu">
+                    <option value="Batilly">Batilly (SOVAB)</option>
+                    <option value="Dieppe">Dieppe (Renault Alpine)</option>
+                    <option value="Douai">Douai</option>
+                    <option value="Maubeuge">Maubeuge</option>
+                    <option value="Novo Mesto">Novo Mesto</option>
+                    <option value="Palencia">Palencia</option>
+                    <option value="Pitesti">Pitesti (Dacia)</option>
+                    <option value="Sandouville">Sandouville</option>
+                    <option value="Valladolid">Valladolid Montage</option>
+                </optgroup>
+
+                <optgroup label="AFRIQUE" id="opt-af">
+                    <option value="Casablanca">Casablanca</option>
+                    <option value="Tanger">Tanger</option>
+                </optgroup>
+
+                <optgroup label="ASIE" id="opt-as">
+                    <option value="Bursa">Bursa (OYAK Renault)</option>
+                    <option value="Busan">Busan</option>
+                    <option value="Chennai">Chennai (Renault Nissan India)</option>
+                </optgroup>
+
+                <optgroup label="AMÉRIQUE DU SUD" id="opt-sa">
+                    <option value="Curitiba VP">Curitiba VP</option>
+                    <option value="Curitiba VU">Curitiba VU</option>
+                    <option value="Medellin">Envigado (SOFASA)</option>
+                    <option value="Cordoba">Santa Isabel de Cordoba</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="live-status">
+            📍 <b id="lbl-site">Site :</b> <span id="siteNameDisplay">--</span><br>
+            🕒 <b id="lbl-weather">Météo :</b> <span id="last-update">--:--</span>
+            <a href="#" onclick="fetchWeather(); return false;" style="color:#3498db; font-size: 0.9em; float: right;" id="btn-refresh">🔄 Actualiser</a><br>
+
+            <div style="margin-top: 5px;">
+                <span class="reg-badge" id="siteTypeDisplay">Réglementation: --</span>
+                <span class="kpi-badge" id="siteObjDisplay">Cible 2026: --</span>
+                <span class="weight-badge" id="sitePoidsDisplay">Poids: --</span>
+            </div>
+
+            <div style="margin-top: 5px;">
+                <span class="sensor-badge" id="sensorBadge">--</span>
+            </div>
+
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #bcdcff; display: flex; justify-content: space-between; align-items: center;">
+                <span id="badge-incin" class="reg-badge bg-green" style="margin-top:0;">🟢 Équip. OK</span>
+                <button id="btn-toggle-incin" class="btn-toggle-incin incin-btn-ok" onclick="toggleIncin()">Signaler Panne</button>
+            </div>
+        </div>
+
+        <div class="control-group" id="grp-perf-container">
+            <span class="group-title" id="grp-perf">Performance Usine</span>
+            <label>
+                <span id="lbl-ratio">Ratio Émission (g/m²)</span>
+                <input type="number" id="vGm2Input" class="input-number-box" min="5" max="150" step="0.1" oninput="sync('Gm2', this.value)">
+            </label>
+            <input type="range" id="iGm2" min="5" max="150" step="0.1" value="19" oninput="sync('Gm2', this.value)">
+        </div>
+
+        <div class="control-group">
+            <span class="group-title" id="grp-impact">Impact Environnemental Global</span>
+            <label>
+                <span id="lbl-flux">Flux Massique Total (kg/h)</span>
+                <input type="number" id="vDebInput" class="input-number-box" min="1" max="1000" oninput="sync('Deb', this.value)">
+            </label>
+            <input type="range" id="iDeb" min="1" max="1000" value="143" oninput="sync('Deb', this.value)">
+        </div>
+
+        <div class="control-group">
+            <span class="group-title" id="grp-weather">Météo Locale</span>
+
+            <div class="weather-toggle-container">
+                <div class="w-toggle active" id="btn-live" onclick="setWeatherMode('live')">TEMPS RÉEL</div>
+                <div class="w-toggle" id="btn-annual" onclick="setWeatherMode('annual')">DOMINANT ANNUEL</div>
+            </div>
+
+            <label><span id="lbl-wind">Vent</span> <span class="val-badge"><span id="vDir">--</span>°</span></label>
+            <input type="range" id="iDir" min="0" max="360" value="0" oninput="update()">
+
+            <label style="margin-top:10px;"><span id="lbl-speed">Vitesse</span> <span class="val-badge"><span id="vVit">--</span> m/s</span></label>
+            <input type="range" id="iVit" min="0.1" max="15" step="0.1" value="1" oninput="update()">
+
+            <label style="margin-top:10px;"><span id="lbl-temp">Température</span> <span class="val-badge"><span id="vTmp">--</span>°C</span></label>
+            <input type="range" id="iTmp" min="-10" max="50" value="20" oninput="update()">
+        </div>
+
+        <div class="status-container">
+            <div id="status-reg" class="status-box bg-green">SITE (RÉGLEMENTATION) : Prêt</div>
+            <div id="status-atm" class="status-box bg-blue">NUAGE (DISPERSION) : Prêt</div>
+        </div>
+    </div>
+
+    <div class="tech-note" id="legend-box"></div>
+</div>
+
+<div id="map">
+    <div id="global-stats-overlay">
+        <div class="compliance-gauge" id="tooltip-compliance">
+            <div class="gauge-title">
+                <span id="lbl-group-title" style="font-size: 0.8em; text-transform: uppercase; color: #7f8c8d; font-weight: bold;">Sites Maîtrisés</span>
+                <span id="lbl-group-sub" style="font-size: 0.7em; color: #95a5a6; margin-top: 2px;">(Verts + Jaunes)</span>
+            </div>
+            <div class="gauge-pct" id="gauge-value">--%</div>
+        </div>
+
+        <div class="stats-row border-cols" style="padding-left: 15px;">
+            <div class="avg-box">
+                <span class="avg-title" id="lbl-avg-title">Moyenne Groupe</span>
+                <span class="avg-main">
+                    <span id="avg-gm2">--</span>
+                    <span style="font-size: 0.7em">g/m²</span>
+                </span>
+                <span class="avg-sub">
+                    <span id="lbl-avg-target">Cible : </span>
+                    <span id="target-avg-gm2">--</span> g/m²
+                    (<span id="gap-pct">--</span>%)
+                </span>
+            </div>
+        </div>
+
+        <div class="stats-row" style="padding: 0 10px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div class="stat-item">🟢 <span id="lbl-st-green">Conformes</span> : <span class="stat-value" id="st-green">0</span></div>
+                <div class="stat-item">🟡 <span id="lbl-st-yellow">Dér. Mineure</span> : <span class="stat-value" id="st-yellow">0</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-left: 10px;">
+                <div class="stat-item">🟠 <span id="lbl-st-orange">Dér. Majeure</span> : <span class="stat-value" id="st-orange">0</span></div>
+                <div class="stat-item">🔴 <span id="lbl-st-red">Hors-Régl.</span> : <span class="stat-value" id="st-red">0</span></div>
+            </div>
+        </div>
+
+        <button class="btn-exit-global" onclick="exitGlobalView()" id="btn-exit-global">QUITTER LA VUE</button>
+    </div>
+</div>
+
+<script>
+    let currentLang = 'fr';
+    let weatherMode = 'live';
+
+    const DEFAULT_GROUP_AVG_GM2 = 28.49;
+
+    const translations = {
+        fr: {
+            btnImport: "📁 IMPORTER BILAN COV",
+            btnGlobal: "🌍 VUE GLOBALE MONDE",
+            lblSite: "Site :",
+            lblWeather: "Météo :",
+            btnRefresh: "🔄 Actualiser",
+            grpPerf: "Performance Usine",
+            lblRatio: "Ratio Émission (g/m²)",
+            grpImpact: "Impact Environnemental Global",
+            lblFlux: "Flux Massique Total (kg/h)",
+            grpWeather: "Météo Locale",
+            lblWind: "Vent",
+            lblSpeed: "Vitesse",
+            lblTemp: "Température",
+            optAf: "AFRIQUE",
+            optAs: "ASIE",
+            optSa: "AMÉRIQUE DU SUD",
+            badgeReg: "Réglementation: ",
+            badgeTarget: "Cible 2026: ",
+            badgeWeight: "Poids: ",
+            badgeCems: "📡 Source: CEMS (Temps Réel)",
+            badgeCofrac: "📋 Source: Bilan Annuel",
+            badgeIncinOk: "🟢 Équip. OK",
+            badgeIncinKo: "⚠️ PANNE INCINÉRATEUR",
+            btnIncinDefaut: "Signaler Panne",
+            btnIncinRepare: "Marquer Réparé",
+            alertImportSucc: "✅ Succès ! Données importées pour {n} sites.",
+            alertImportErr1: "Erreur : Onglet introuvable.",
+            alertImportErr2: "Erreur d'en-tête.",
+            alertImportErr3: "Erreur technique lors de la lecture.",
+            regRed: "🔴 SITE : HORS-RÉGLEMENTATION (>",
+            regOrange: "🟠 SITE : DÉRIVE MAJEURE (ÉCART > 5% / POIDS LOURD)",
+            regYellow: "🟡 SITE : DÉRIVE MINEURE (OBJECTIF NON ATTEINT)",
+            regGreen: "🟢 SITE : EXCELLENCE (RÉGLEMENTATION + CIBLE 2026 OK)",
+            atmRed: "🔴 NUAGE : ALERTE SANTÉ / OZONE (VOLUME + CANICULE)",
+            atmYellowVol: "🟡 NUAGE : VIGILANCE (FORT VOLUME > 250kg/h)",
+            atmYellowStag: "🟡 NUAGE : VIGILANCE (STAGNATION D'AIR)",
+            atmBlue: "🔵 NUAGE : DISPERSION OPTIMALE (FLUX MAÎTRISÉ)",
+            lblGrpTitle: "Sites Maîtrisés",
+            lblGrpSub: "(Verts + Jaunes)",
+            lblGrpTooltip: "Pourcentage des sites respectant la loi ET ne présentant pas de dérive majeure (>5% sur site lourd)",
+            lblAvgTitle: "Moyenne Groupe",
+            lblAvgTarget: "Cible : ",
+            lblStGreen: "Conformes",
+            lblStYellow: "Dér. Mineure",
+            lblStOrange: "Dér. Majeure",
+            lblStRed: "Hors-Régl.",
+            btnExit: "RETOUR AU PILOTAGE SITE",
+            modeLive: "TEMPS RÉEL",
+            modeAnnual: "DOMINANT ANNUEL",
+            txtAnnuel: "Moyenne Heures Ouvrées (Fixe)",
+            legendHtml: `
+                <h3>1. Site (Performances Réglementaires)</h3>
+                <p><span class="color-dot" style="background:#2ecc71"></span> <b>Vert :</b> Réglementation + Objectif 2026 OK.</p>
+                <p><span class="color-dot" style="background:#f1c40f"></span> <b>Jaune :</b> Dérive modérée (&lt; 5%) OU Cible dépassée sur usine &lt; 5,88%.</p>
+                <p><span class="color-dot" style="background:#e67e22"></span> <b>Orange :</b> Dérive nette (&gt; 5%) sur un site lourd (≥ 5,88%).</p>
+                <p><span class="color-dot" style="background:#e74c3c"></span> <b>Rouge :</b> Hors-réglementation locale (Dépassement VLE).</p>
+                <h3 style="margin-top: 10px;">2. Nuage (Risque Atmosphérique & Ozone)</h3>
+                <p><span class="color-dot" style="background:#3498db"></span> <b>Bleu :</b> Dispersion atmosphérique sécurisée.</p>
+                <p><span class="color-dot" style="background:#f1c40f"></span> <b>Jaune :</b> Vigilance Stagnation OU fort volume dilué.</p>
+                <p><span class="color-dot" style="background:#e74c3c"></span> <b>Rouge :</b> Risque critique : fort volume + canicule sans vent.</p>
+            `
+        },
+        en: {
+            btnImport: "📁 IMPORT VOC REPORT",
+            btnGlobal: "🌍 GLOBAL WORLD VIEW",
+            lblSite: "Site:",
+            lblWeather: "Weather:",
+            btnRefresh: "🔄 Refresh",
+            grpPerf: "Plant Performance",
+            lblRatio: "Emission Ratio (g/m²)",
+            grpImpact: "Global Environmental Impact",
+            lblFlux: "Total Mass Flow (kg/h)",
+            grpWeather: "Local Weather",
+            lblWind: "Wind",
+            lblSpeed: "Speed",
+            lblTemp: "Temperature",
+            optAf: "AFRICA",
+            optAs: "ASIA",
+            optSa: "SOUTH AMERICA",
+            badgeReg: "Regulation: ",
+            badgeTarget: "2026 Target: ",
+            badgeWeight: "Weight: ",
+            badgeCems: "📡 Source: CEMS (Live)",
+            badgeCofrac: "📋 Source: VOC mass balance",
+            badgeIncinOk: "🟢 Equip. OK",
+            badgeIncinKo: "⚠️ INCINERATOR FAULT",
+            btnIncinDefaut: "Report Fault",
+            btnIncinRepare: "Mark Repaired",
+            alertImportSucc: "✅ Success! Data imported for {n} sites.",
+            alertImportErr1: "Error: Tab not found.",
+            alertImportErr2: "Header error.",
+            alertImportErr3: "Technical error during read.",
+            regRed: "🔴 SITE: NON-COMPLIANT (>",
+            regOrange: "🟠 SITE: MAJOR DEVIATION (GAP > 5% / HEAVY)",
+            regYellow: "🟡 SITE: MINOR DEVIATION (TARGET MISSED)",
+            regGreen: "🟢 SITE: EXCELLENCE (REG. + TARGET OK)",
+            atmRed: "🔴 CLOUD: HEALTH ALERT (VOLUME + HEATWAVE)",
+            atmYellowVol: "🟡 CLOUD: VIGILANCE (HIGH VOLUME)",
+            atmYellowStag: "🟡 CLOUD: VIGILANCE (AIR STAGNATION)",
+            atmBlue: "🔵 CLOUD: OPTIMAL DISPERSION",
+            lblGrpTitle: "Controlled Sites",
+            lblGrpSub: "(Green + Yellow)",
+            lblGrpTooltip: "Percentage of sites respecting the law AND with no major deviation",
+            lblAvgTitle: "Group Average",
+            lblAvgTarget: "Target: ",
+            lblStGreen: "Excellence",
+            lblStYellow: "Min. Deviation",
+            lblStOrange: "Maj. Deviation",
+            lblStRed: "Non-Compliant",
+            btnExit: "BACK TO PILOTING",
+            modeLive: "REAL-TIME",
+            modeAnnual: "ANNUAL DOMINANT",
+            txtAnnuel: "Operational Hours Avg. (Fixed)",
+            legendHtml: `
+                <h3>1. Site (Regulatory Performance)</h3>
+                <p><span class="color-dot" style="background:#2ecc71"></span> <b>Green:</b> Regulation + 2026 target OK.</p>
+                <p><span class="color-dot" style="background:#f1c40f"></span> <b>Yellow:</b> Moderate deviation.</p>
+                <p><span class="color-dot" style="background:#e67e22"></span> <b>Orange:</b> Major deviation on heavyweight site.</p>
+                <p><span class="color-dot" style="background:#e74c3c"></span> <b>Red:</b> Local non-compliance.</p>
+                <h3 style="margin-top: 10px;">2. Cloud</h3>
+                <p><span class="color-dot" style="background:#3498db"></span> <b>Blue:</b> Safe atmospheric dispersion.</p>
+                <p><span class="color-dot" style="background:#f1c40f"></span> <b>Yellow:</b> Vigilance.</p>
+                <p><span class="color-dot" style="background:#e74c3c"></span> <b>Red:</b> Critical risk.</p>
+            `
+        }
+    };
+
+    const sites = {
+        "Batilly": { coords: [49.174477, 5.976250], defGm2: 32.7, defDeb: 160, limGm2: 40, objGrp: 32.70, poids: 7.96, mesure: "CEMS", type_fr: "Réglem. UE VU (40)", type_en: "Reg. EU VU (40)", vDirAn: 210, vVitAn: 4.5, vTmpAn: 15, incinDef: false },
+        "Bursa": { coords: [40.253804, 28.951072], defGm2: 33.0, defDeb: 240, limGm2: 45, objGrp: 33.00, poids: 14.34, mesure: "CEMS", type_fr: "Réglem. TR (45)", type_en: "Reg. TR (45)", vDirAn: 30, vVitAn: 4.0, vTmpAn: 20, incinDef: false },
+        "Busan": { coords: [35.092502, 128.879157], defGm2: 23.68, defDeb: 210, limGm2: 40, objGrp: 23.68, poids: 3.70, mesure: "CEMS", type_fr: "Réglem. KR (40)", type_en: "Reg. KR (40)", vDirAn: 320, vVitAn: 5.0, vTmpAn: 18, incinDef: false },
+        "Casablanca": { coords: [33.604339, -7.497082], defGm2: 53.5, defDeb: 90, limGm2: 75, objGrp: 53.50, poids: 8.17, mesure: "CEMS", type_fr: "Réglem. MA (75)", type_en: "Reg. MA (75)", vDirAn: 360, vVitAn: 5.5, vTmpAn: 22, incinDef: false },
+        "Cordoba": { coords: [-31.470802, -64.245280], defGm2: 63.0, defDeb: 130, limGm2: 70, objGrp: 63.00, poids: 1.74, mesure: "COFRAC", type_fr: "Réglem. AR (70)", type_en: "Reg. AR (70)", vDirAn: 180, vVitAn: 4.5, vTmpAn: 24, incinDef: false },
+        "Curitiba VU": { coords: [-25.531288, -49.118348], defGm2: 49.1, defDeb: 100, limGm2: 60, objGrp: 49.10, poids: 3.91, mesure: "COFRAC", type_fr: "Réglem. BR (60)", type_en: "Reg. BR (60)", vDirAn: 90, vVitAn: 4.0, vTmpAn: 21, incinDef: false },
+        "Curitiba VP": { coords: [-25.531288, -49.118348], defGm2: 35.0, defDeb: 180, limGm2: 50, objGrp: 35.00, poids: 4.95, mesure: "CEMS", type_fr: "Réglem. BR (50)", type_en: "Reg. BR (50)", vDirAn: 90, vVitAn: 4.0, vTmpAn: 21, incinDef: false },
+        "Dieppe": { coords: [49.912596, 1.087043], defGm2: 52.0, defDeb: 10, limGm2: 90, objGrp: 52.00, poids: 0.60, mesure: "COFRAC", type_fr: "Dérog. FR (90)", type_en: "Exempt. FR (90)", vDirAn: 230, vVitAn: 6.5, vTmpAn: 14, incinDef: false },
+        "Douai": { coords: [50.365349, 3.025780], defGm2: 27.0, defDeb: 220, limGm2: 30, objGrp: 27.00, poids: 5.22, mesure: "CEMS", type_fr: "Réglem. UE VP (30)", type_en: "Reg. EU VP (30)", vDirAn: 220, vVitAn: 5.0, vTmpAn: 15, incinDef: false },
+        "Maubeuge": { coords: [50.272643, 3.913922], defGm2: 23.0, defDeb: 120, limGm2: 40, objGrp: 23.00, poids: 4.41, mesure: "CEMS", type_fr: "Réglem. UE VU (40)", type_en: "Reg. EU VU (40)", vDirAn: 220, vVitAn: 5.0, vTmpAn: 15, incinDef: false },
+        "Medellin": { coords: [6.171266, -75.597986], defGm2: 51.9, defDeb: 80, limGm2: 65, objGrp: 51.90, poids: 2.17, mesure: "COFRAC", type_fr: "Réglem. CO (65)", type_en: "Reg. CO (65)", vDirAn: 100, vVitAn: 3.0, vTmpAn: 26, incinDef: false },
+        "Novo Mesto": { coords: [45.794333, 15.177418], defGm2: 17.5, defDeb: 110, limGm2: 30, objGrp: 17.50, poids: 1.56, mesure: "CEMS", type_fr: "Réglem. UE VP (30)", type_en: "Reg. EU VP (30)", vDirAn: 270, vVitAn: 3.0, vTmpAn: 16, incinDef: false },
+        "Palencia": { coords: [41.963446, -4.486288], defGm2: 20.73, defDeb: 180, limGm2: 30, objGrp: 20.73, poids: 4.28, mesure: "CEMS", type_fr: "Réglem. UE VP (30)", type_en: "Reg. EU VP (30)", vDirAn: 240, vVitAn: 4.5, vTmpAn: 17, incinDef: false },
+        "Pitesti": { coords: [44.948230, 24.933965], defGm2: 20.0, defDeb: 280, limGm2: 35, objGrp: 20.00, poids: 11.69, mesure: "CEMS", type_fr: "Réglem. RO (35)", type_en: "Reg. RO (35)", vDirAn: 280, vVitAn: 3.5, vTmpAn: 16, incinDef: true },
+        "Sandouville": { coords: [49.481698, 0.291347], defGm2: 31.0, defDeb: 180, limGm2: 40, objGrp: 31.00, poids: 9.99, mesure: "CEMS", type_fr: "Réglem. UE VU (40)", type_en: "Reg. EU VU (40)", vDirAn: 240, vVitAn: 7.0, vTmpAn: 15, incinDef: false },
+        "Tanger": { coords: [35.694889, -5.685441], defGm2: 18.4, defDeb: 300, limGm2: 50, objGrp: 18.40, poids: 9.06, mesure: "CEMS", type_fr: "Réglem. MA (50)", type_en: "Reg. MA (50)", vDirAn: 90, vVitAn: 7.5, vTmpAn: 23, incinDef: false },
+        "Valladolid": { coords: [41.600566, -4.719411], defGm2: 20.7, defDeb: 190, limGm2: 30, objGrp: 20.70, poids: 6.24, mesure: "CEMS", type_fr: "Réglem. UE VP (30)", type_en: "Reg. EU VP (30)", vDirAn: 240, vVitAn: 4.5, vTmpAn: 18, incinDef: true },
+
+        "Chennai": {
+            coords: [12.841193943036576, 79.94054132694605],
+            defGm2: 78.0,
+            defDeb: 140,
+            limGm2: 120,
+            objGrp: 80.0,
+            poids: 4.5,
+            mesure: "COFRAC",
+            type_fr: "Réglem. IN (120 - interne)",
+            type_en: "Reg. IN (120 - internal)",
+            vDirAn: 90,
+            vVitAn: 3.5,
+            vTmpAn: 30,
+            incinDef: false,
+            excludeFromGroupTarget: true
+        }
+    };
+
+    const excelToSiteMap = {
+        "Batilly": "Batilly",
+        "Bursa": "Bursa",
+        "Busan": "Busan",
+        "Casablanca": "Casablanca",
+        "Cordoba": "Cordoba",
+        "CuritibaVU": "Curitiba VU",
+        "CuritibaVP": "Curitiba VP",
+        "Curitiba VU": "Curitiba VU",
+        "Curitiba VP": "Curitiba VP",
+        "Dieppe": "Dieppe",
+        "Douai": "Douai",
+        "Maubeuge": "Maubeuge",
+        "Medellin": "Medellin",
+        "Envigado": "Medellin",
+        "NovoMesto": "Novo Mesto",
+        "Novo Mesto": "Novo Mesto",
+        "Palencia": "Palencia",
+        "Pitesti": "Pitesti",
+        "Sandouville": "Sandouville",
+        "Tanger": "Tanger",
+        "Valladolid": "Valladolid",
+        "Chennai": "Chennai"
+    };
+
+    const apiKey = '5f7d548838a5a36253e4e29fe16ef312';
+
+    let currentSite = "Sandouville";
+    let map, plumeLayer, factoryMarker, siteAlertMarker;
+    let globalMarkers = [];
+    let bgMarkers = [];
+    let globalAlertMarkers = [];
+
+    const SEUIL_POIDS = 5.88;
+    const TOLERANCE_DERIVE = 0.05;
+
+    function toNumber(value) {
+        if (value === null || value === undefined || value === "") return NaN;
+        if (typeof value === "number") return value;
+
+        if (typeof value === "string") {
+            return parseFloat(
+                value
+                    .replace(/\s/g, "")
+                    .replace(",", ".")
+                    .replace("g/m²", "")
+                    .replace("g/m2", "")
+                    .replace("g", "")
+            );
+        }
+
+        return NaN;
+    }
+
+    function getOfficialGroupAverage() {
+        const stored = parseFloat(localStorage.getItem('renault_group_avg_gm2'));
+
+        if (!isNaN(stored) && stored > 0) {
+            return stored;
+        }
+
+        return DEFAULT_GROUP_AVG_GM2;
+    }
+
+    function applyTranslations() {
+        const t = translations[currentLang];
+
+        document.getElementById('flag-fr').className = currentLang === 'fr' ? 'lang-active' : 'lang-inactive';
+        document.getElementById('flag-en').className = currentLang === 'en' ? 'lang-active' : 'lang-inactive';
+
+        document.getElementById('btn-import').innerText = t.btnImport;
+        document.getElementById('btn-global').innerText = t.btnGlobal;
+        document.getElementById('lbl-site').innerText = t.lblSite;
+        document.getElementById('lbl-weather').innerText = t.lblWeather;
+        document.getElementById('btn-refresh').innerText = t.btnRefresh;
+        document.getElementById('grp-perf').innerText = t.grpPerf;
+        document.getElementById('lbl-ratio').innerText = t.lblRatio;
+        document.getElementById('grp-impact').innerText = t.grpImpact;
+        document.getElementById('lbl-flux').innerText = t.lblFlux;
+        document.getElementById('grp-weather').innerText = t.grpWeather;
+        document.getElementById('lbl-wind').innerText = t.lblWind;
+        document.getElementById('lbl-speed').innerText = t.lblSpeed;
+        document.getElementById('lbl-temp').innerText = t.lblTemp;
+
+        document.getElementById('opt-af').label = t.optAf;
+        document.getElementById('opt-as').label = t.optAs;
+        document.getElementById('opt-sa').label = t.optSa;
+
+        document.getElementById('legend-box').innerHTML = t.legendHtml;
+
+        document.getElementById('lbl-group-title').innerText = t.lblGrpTitle;
+        document.getElementById('lbl-group-sub').innerText = t.lblGrpSub;
+        document.getElementById('tooltip-compliance').title = t.lblGrpTooltip;
+        document.getElementById('lbl-avg-title').innerText = t.lblAvgTitle;
+        document.getElementById('lbl-avg-target').innerText = t.lblAvgTarget;
+
+        document.getElementById('lbl-st-green').innerText = t.lblStGreen;
+        document.getElementById('lbl-st-yellow').innerText = t.lblStYellow;
+        document.getElementById('lbl-st-orange').innerText = t.lblStOrange;
+        document.getElementById('lbl-st-red').innerText = t.lblStRed;
+
+        document.getElementById('btn-exit-global').innerText = t.btnExit;
+        document.getElementById('btn-live').innerText = t.modeLive;
+        document.getElementById('btn-annual').innerText = t.modeAnnual;
+
+        if (weatherMode === 'annual') {
+            document.getElementById('last-update').innerText = t.txtAnnuel;
+        }
+
+        loadSiteSettings();
+        update();
+    }
+
+    function toggleLang() {
+        currentLang = currentLang === 'fr' ? 'en' : 'fr';
+        applyTranslations();
+    }
+
+    function init() {
+        localStorage.setItem('renault_group_avg_gm2', getOfficialGroupAverage().toFixed(2));
+
+        map = L.map('map', { zoomControl: false }).setView(sites[currentSite].coords, 13);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; <a href="https://www.esri.com/">Esri</a>'
+        }).addTo(map);
+
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Esri'
+        }).addTo(map);
+
+        factoryMarker = L.circleMarker(sites[currentSite].coords, {
+            radius: 9,
+            color: '#fff',
+            fillColor: '#2ecc71',
+            fillOpacity: 1,
+            weight: 3
+        }).addTo(map);
+
+        document.getElementById('siteSelect').value = currentSite;
+
+        applyTranslations();
+        fetchWeather();
+    }
+
+    function toggleIncin() {
+        const key = 'renault_incin_' + currentSite;
+        let isBroken = localStorage.getItem(key) === 'true';
+
+        if (localStorage.getItem(key) === null) {
+            isBroken = sites[currentSite].incinDef;
+        }
+
+        localStorage.setItem(key, !isBroken);
+        loadSiteSettings();
+        update();
+    }
+
+    function setWeatherMode(mode) {
+        weatherMode = mode;
+        const t = translations[currentLang];
+
+        document.getElementById('btn-live').className = mode === 'live' ? 'w-toggle active' : 'w-toggle';
+        document.getElementById('btn-annual').className = mode === 'annual' ? 'w-toggle active' : 'w-toggle';
+
+        const iDir = document.getElementById('iDir');
+        const iVit = document.getElementById('iVit');
+        const iTmp = document.getElementById('iTmp');
+
+        if (mode === 'annual') {
+            document.getElementById('btn-refresh').style.display = 'none';
+
+            iDir.classList.add('slider-disabled');
+            iVit.classList.add('slider-disabled');
+            iTmp.classList.add('slider-disabled');
+
+            const s = sites[currentSite];
+
+            iDir.value = s.vDirAn;
+            iVit.value = s.vVitAn;
+            iTmp.value = s.vTmpAn;
+
+            document.getElementById('last-update').innerText = t.txtAnnuel;
+
+            update();
+        } else {
+            document.getElementById('btn-refresh').style.display = 'inline';
+
+            iDir.classList.remove('slider-disabled');
+            iVit.classList.remove('slider-disabled');
+            iTmp.classList.remove('slider-disabled');
+
+            fetchWeather();
+        }
+    }
+
+    function handleExcelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const t = translations[currentLang];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const sheet = workbook.Sheets["Suivi_Mensuel"];
+
+                if (!sheet) {
+                    alert(t.alertImportErr1);
+                    return;
+                }
+
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const hIdx = rows.findIndex(r => r && String(r[0]).trim() === "Site");
+
+                if (hIdx === -1) {
+                    alert(t.alertImportErr2);
+                    return;
+                }
+
+                const headers = rows[hIdx];
+
+                const gIdx = headers.findIndex(h =>
+                    typeof h === 'string' &&
+                    (
+                        h.toLowerCase().includes("g/m") ||
+                        h.toLowerCase().includes("bilan")
+                    )
+                );
+
+                if (gIdx === -1) {
+                    alert(t.alertImportErr2);
+                    return;
+                }
+
+                let count = 0;
+
+                // --- 1. LECTURE DE L'ONGLET SUIVI MENSUEL ---
+                for (let i = hIdx + 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r || !r[0]) continue;
+
+                    const rawSiteName = String(r[0]).trim();
+                    const key = excelToSiteMap[rawSiteName];
+
+                    if (key) {
+                        const gv = toNumber(r[gIdx]);
+                        let tv = 0;
+
+                        for (let m = 12; m >= 1; m--) {
+                            const v = toNumber(r[m]);
+                            if (v > 0) {
+                                tv = v;
+                                break;
+                            }
+                        }
+
+                        if (!isNaN(gv) && gv > 0) {
+                            localStorage.setItem('renault_gm2_' + key, gv.toFixed(2));
+
+                            if (tv > 0) {
+                                localStorage.setItem('renault_deb_' + key, Math.round((tv * 1000) / 320));
+                            }
+                            count++;
+                        }
+                    }
+                }
+
+                // --- 2. EXTRACTION SPÉCIFIQUE DE CHENNAI ---
+                const chennaiSheet = workbook.Sheets["Chennai"];
+                if (chennaiSheet) {
+                    const cRows = XLSX.utils.sheet_to_json(chennaiSheet, { header: 1 });
+                    const gm2Row = cRows.find(r => r && r[2] && String(r[2]).includes("Bilan (g/m2)"));
+                    const kgRow = cRows.find(r => r && r[2] && String(r[2]).includes("Bilan (kg)"));
+                    
+                    if (gm2Row) {
+                        const gv = toNumber(gm2Row[4]); // Colonne 4 = Total (YTD)
+                        if (!isNaN(gv) && gv > 0) {
+                            localStorage.setItem('renault_gm2_Chennai', gv.toFixed(2));
+                            
+                            if (kgRow) {
+                                let lastKg = 0;
+                                // Les mois sont de la colonne 5 (Jan) à 16 (Déc). On part de la fin.
+                                for (let m = 16; m >= 5; m--) { 
+                                    const val = toNumber(kgRow[m]);
+                                    if (!isNaN(val) && val > 0) {
+                                        lastKg = val;
+                                        break;
+                                    }
+                                }
+                                if (lastKg > 0) {
+                                    // Bilan est en kg. Pour obtenir des kg/h, on divise par ~320h
+                                    localStorage.setItem('renault_deb_Chennai', Math.round(lastKg / 320));
+                                }
+                            }
+                            count++;
+                        }
+                    }
+                }
+
+                // --- 3. MISE A JOUR DE LA MOYENNE GROUPE ---
+                let officialGroupAvg = NaN;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r || r.length === 0) continue;
+
+                    const rowText = r.map(c => String(c || "").toLowerCase()).join(" ");
+
+                    const looksLikeGroupRow =
+                        rowText.includes("groupe") ||
+                        rowText.includes("group") ||
+                        rowText.includes("total groupe") ||
+                        rowText.includes("moyenne groupe") ||
+                        rowText.includes("moyenne renault");
+
+                    if (looksLikeGroupRow) {
+                        const candidate = toNumber(r[gIdx]);
+
+                        if (!isNaN(candidate) && candidate > 0 && candidate < 200) {
+                            officialGroupAvg = candidate;
+                            break;
+                        }
+
+                        for (let c = 0; c < r.length; c++) {
+                            const v = toNumber(r[c]);
+
+                            if (!isNaN(v) && v > 0 && v < 200 && v !== 2024 && v !== 2025 && v !== 2026) {
+                                officialGroupAvg = v;
+                                break;
+                            }
+                        }
+
+                        if (!isNaN(officialGroupAvg)) break;
+                    }
+                }
+
+                if (!isNaN(officialGroupAvg) && officialGroupAvg > 0) {
+                    localStorage.setItem('renault_group_avg_gm2', officialGroupAvg.toFixed(2));
+                } else {
+                    localStorage.setItem('renault_group_avg_gm2', DEFAULT_GROUP_AVG_GM2.toFixed(2));
+                }
+
+                let msg = t.alertImportSucc.replace('{n}', count);
+                msg += "\n\nMoyenne Groupe affichée : " + getOfficialGroupAverage().toFixed(2) + " g/m²";
+
+                alert(msg);
+
+                loadSiteSettings();
+                showGlobalView();
+
+            } catch (err) {
+                alert(t.alertImportErr3);
+                console.error(err);
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function sync(type, val) {
+        document.getElementById('v' + type + 'Input').value = val;
+        document.getElementById('i' + type).value = val;
+        save();
+    }
+
+    function showGlobalView() {
+        if (plumeLayer) map.removeLayer(plumeLayer);
+        if (factoryMarker) map.removeLayer(factoryMarker);
+        if (siteAlertMarker) map.removeLayer(siteAlertMarker);
+
+        bgMarkers.forEach(m => map.removeLayer(m));
+        bgMarkers = [];
+
+        globalMarkers.forEach(m => map.removeLayer(m));
+        globalMarkers = [];
+
+        globalAlertMarkers.forEach(m => map.removeLayer(m));
+        globalAlertMarkers = [];
+
+        document.getElementById('site-controls').style.opacity = "0.3";
+        document.getElementById('site-controls').style.pointerEvents = "none";
+        document.getElementById('global-stats-overlay').style.display = "flex";
+
+        map.flyTo([40, 5], 2);
+
+        let stats = {
+            green: 0,
+            yellow: 0,
+            orange: 0,
+            red: 0,
+            total: 0
+        };
+
+        let totalSurfaceTarget = 0;
+        let totalTargetVoc = 0;
+
+        Object.keys(sites).forEach(siteKey => {
+            const s = sites[siteKey];
+
+            const g = parseFloat(localStorage.getItem('renault_gm2_' + siteKey)) || s.defGm2;
+            const deb = parseFloat(localStorage.getItem('renault_deb_' + siteKey)) || s.defDeb;
+
+            if (g > 0 && !s.excludeFromGroupTarget) {
+                const surface = (deb * 1000) / g;
+                totalSurfaceTarget += surface;
+                totalTargetVoc += surface * s.objGrp;
+            }
+
+            const er = (g - s.objGrp) / s.objGrp;
+
+            if (g > s.limGm2) {
+                stats.red++;
+            } else if (g > s.objGrp) {
+                if (s.poids >= SEUIL_POIDS && er > TOLERANCE_DERIVE) {
+                    stats.orange++;
+                } else {
+                    stats.yellow++;
+                }
+            } else {
+                stats.green++;
+            }
+
+            stats.total++;
+        });
+
+        const pct = stats.total > 0
+            ? Math.round(((stats.green + stats.yellow) / stats.total) * 100)
+            : 0;
+
+        document.getElementById('gauge-value').innerText = pct + "%";
+        document.getElementById('st-green').innerText = stats.green;
+        document.getElementById('st-yellow').innerText = stats.yellow;
+        document.getElementById('st-orange').innerText = stats.orange;
+        document.getElementById('st-red').innerText = stats.red;
+
+        const avgGm2Num = getOfficialGroupAverage();
+
+        const targetAvgGm2Num = totalSurfaceTarget > 0
+            ? totalTargetVoc / totalSurfaceTarget
+            : 0;
+
+        const avgGm2 = avgGm2Num.toFixed(2);
+        const targetAvgGm2 = targetAvgGm2Num.toFixed(1);
+
+        const gap = targetAvgGm2Num > 0
+            ? (((avgGm2Num - targetAvgGm2Num) / targetAvgGm2Num) * 100).toFixed(1)
+            : "0.0";
+
+        document.getElementById('avg-gm2').innerText = avgGm2;
+        document.getElementById('target-avg-gm2').innerText = targetAvgGm2;
+
+        const gapEl = document.getElementById('gap-pct');
+
+        if (parseFloat(gap) > 0) {
+            gapEl.innerText = "+" + gap;
+            gapEl.style.color = "#e74c3c";
+        } else {
+            gapEl.innerText = gap;
+            gapEl.style.color = "#2ecc71";
+        }
+
+        Object.keys(sites).forEach(async siteKey => {
+            const s = sites[siteKey];
+
+            const g = parseFloat(localStorage.getItem('renault_gm2_' + siteKey)) || s.defGm2;
+            const deb = parseFloat(localStorage.getItem('renault_deb_' + siteKey)) || s.defDeb;
+
+            let isBroken = localStorage.getItem('renault_incin_' + siteKey) === 'true';
+
+            if (localStorage.getItem('renault_incin_' + siteKey) === null) {
+                isBroken = s.incinDef;
+            }
+
+            let dotColor = "#2ecc71";
+            const er = (g - s.objGrp) / s.objGrp;
+
+            if (g > s.limGm2) {
+                dotColor = "#e74c3c";
+            } else if (g > s.objGrp) {
+                if (s.poids >= SEUIL_POIDS && er > TOLERANCE_DERIVE) {
+                    dotColor = "#e67e22";
+                } else {
+                    dotColor = "#f1c40f";
+                }
+            }
+
+            let dir = 0;
+            let vit = 2;
+            let tmp = 20;
+
+            if (weatherMode === 'live') {
+                try {
+                    const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s.coords[0]}&lon=${s.coords[1]}&appid=${apiKey}&units=metric`);
+                    const w = await r.json();
+
+                    if (w.cod === 200) {
+                        dir = w.wind.deg || 0;
+                        vit = w.wind.speed;
+                        tmp = Math.round(w.main.temp);
+                    }
+                } catch (e) {}
+            } else {
+                dir = s.vDirAn;
+                vit = s.vVitAn;
+                tmp = s.vTmpAn;
+            }
+
+            let pc = "#3498db";
+            const sh = vit < 3 && tmp > 25;
+
+            if (sh && deb > 250) {
+                pc = "#e74c3c";
+            } else if (deb > 250 || (sh && deb > 30)) {
+                pc = "#f1c40f";
+            }
+
+            const ang = (dir + 180) % 360;
+            const l = (deb / 300) * 0.08 / (vit < 1 ? 1 : vit * 0.5);
+            const tr = v => (v - 90) * Math.PI / 180;
+            const sp = vit < 3 ? 35 : 15;
+
+            const p1 = s.coords;
+            const p2 = [p1[0] + Math.cos(tr(ang - sp)) * l, p1[1] + Math.sin(tr(ang - sp)) * l];
+            const p3 = [p1[0] + Math.cos(tr(ang)) * (l * 1.4), p1[1] + Math.sin(tr(ang)) * (l * 1.4)];
+            const p4 = [p1[0] + Math.cos(tr(ang + sp)) * l, p1[1] + Math.sin(tr(ang + sp)) * l];
+
+            const cloud = L.polygon([p1, p2, p3, p4], {
+                color: pc,
+                fillColor: pc,
+                fillOpacity: 0.6,
+                weight: 2
+            }).addTo(map);
+
+            globalMarkers.push(cloud);
+
+            const m = L.circleMarker(s.coords, {
+                radius: 8,
+                color: '#fff',
+                fillColor: dotColor,
+                fillOpacity: 1,
+                weight: 2
+            }).addTo(map);
+
+            let tooltipText = `<b>${siteKey}</b><br><span style="font-size:0.8em; color:#666;">${s.mesure === "CEMS" ? "📡 Source: CEMS" : "📋 Source: COFRAC"}</span>`;
+
+            if (isBroken) {
+                tooltipText += `<br><span style="color:red;">⚠️ Panne Incinérateur</span>`;
+            }
+
+            m.bindTooltip(tooltipText, {
+                direction: 'top',
+                offset: [0, -5]
+            });
+
+            m.on('click', () => {
+                document.getElementById('siteSelect').value = siteKey;
+                changeSite();
+            });
+
+            globalMarkers.push(m);
+
+            if (isBroken) {
+                const iconHtml = L.divIcon({
+                    html: '<div class="alert-map-icon">⚠️</div>',
+                    className: 'empty-icon',
+                    iconSize: [0, 0]
+                });
+
+                const alertM = L.marker(s.coords, { icon: iconHtml }).addTo(map);
+
+                alertM.bindTooltip(`<b>${siteKey}</b><br><span style="color:red;">⚠️ Panne Incinérateur</span>`, {
+                    direction: 'top',
+                    offset: [8, -15]
+                });
+
+                alertM.on('click', () => {
+                    document.getElementById('siteSelect').value = siteKey;
+                    changeSite();
+                });
+
+                globalAlertMarkers.push(alertM);
+            }
+        });
+    }
+
+    function exitGlobalView() {
+        document.getElementById('site-controls').style.opacity = "1";
+        document.getElementById('site-controls').style.pointerEvents = "auto";
+        document.getElementById('global-stats-overlay').style.display = "none";
+
+        globalMarkers.forEach(m => map.removeLayer(m));
+        globalMarkers = [];
+
+        globalAlertMarkers.forEach(m => map.removeLayer(m));
+        globalAlertMarkers = [];
+
+        if (!map.hasLayer(factoryMarker)) {
+            factoryMarker.addTo(map);
+        }
+
+        factoryMarker.setLatLng(sites[currentSite].coords);
+        map.flyTo(sites[currentSite].coords, 13);
+
+        update();
+    }
+
+    function loadSiteSettings() {
+        const s = sites[currentSite];
+        const t = translations[currentLang];
+
+        const g = localStorage.getItem('renault_gm2_' + currentSite) || s.defGm2;
+        const d = localStorage.getItem('renault_deb_' + currentSite) || s.defDeb;
+
+        let isBroken = localStorage.getItem('renault_incin_' + currentSite) === 'true';
+
+        if (localStorage.getItem('renault_incin_' + currentSite) === null) {
+            isBroken = s.incinDef;
+        }
+
+        document.getElementById('vGm2Input').value = g;
+        document.getElementById('iGm2').value = g;
+        document.getElementById('vDebInput').value = d;
+        document.getElementById('iDeb').value = d;
+
+        document.getElementById('siteNameDisplay').innerText = currentSite;
+        document.getElementById('siteTypeDisplay').innerText = t.badgeReg + (currentLang === 'fr' ? s.type_fr : s.type_en);
+        document.getElementById('siteObjDisplay').innerText = t.badgeTarget + s.objGrp + "g";
+        document.getElementById('sitePoidsDisplay').innerText = t.badgeWeight + s.poids + "%";
+
+        const badge = document.getElementById('badge-incin');
+        const btn = document.getElementById('btn-toggle-incin');
+
+        if (isBroken) {
+            badge.innerText = t.badgeIncinKo;
+            badge.className = "reg-badge badge-incin-ko";
+            btn.innerText = t.btnIncinRepare;
+            btn.className = "btn-toggle-incin incin-btn-ko";
+        } else {
+            badge.innerText = t.badgeIncinOk;
+            badge.className = "reg-badge bg-green";
+            btn.innerText = t.btnIncinDefaut;
+            btn.className = "btn-toggle-incin incin-btn-ok";
+        }
+
+        const sBadge = document.getElementById('sensorBadge');
+
+        if (s.mesure === "CEMS") {
+            sBadge.innerText = t.badgeCems;
+            sBadge.style.background = "#d35400";
+        } else {
+            sBadge.innerText = t.badgeCofrac;
+            sBadge.style.background = "#7f8c8d";
+        }
+    }
+
+    function save() {
+        localStorage.setItem('renault_gm2_' + currentSite, document.getElementById('iGm2').value);
+        localStorage.setItem('renault_deb_' + currentSite, document.getElementById('iDeb').value);
+        update();
+    }
+
+    function changeSite() {
+        currentSite = document.getElementById('siteSelect').value;
+
+        loadSiteSettings();
+        exitGlobalView();
+
+        if (weatherMode === 'annual') {
+            setWeatherMode('annual');
+        } else {
+            fetchWeather();
+        }
+    }
+
+    async function fetchWeather() {
+        if (weatherMode === 'annual') return;
+
+        try {
+            const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${sites[currentSite].coords[0]}&lon=${sites[currentSite].coords[1]}&appid=${apiKey}&units=metric`);
+            const d = await r.json();
+
+            if (d.cod === 200) {
+                document.getElementById('iDir').value = d.wind.deg || 0;
+                document.getElementById('iVit').value = d.wind.speed;
+                document.getElementById('iTmp').value = Math.round(d.main.temp);
+
+                const siteTime = Date.now() + (d.timezone * 1000);
+                const siteDate = new Date(siteTime);
+
+                document.getElementById('last-update').innerText = siteDate.toLocaleTimeString(
+                    currentLang === 'fr' ? 'fr-FR' : 'en-US',
+                    { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }
+                );
+
+                update();
+            }
+        } catch (e) {
+            console.error(e);
+            update();
+        }
+    }
+
+    function update() {
+        if (!map || !factoryMarker) return;
+
+        const g = parseFloat(document.getElementById('iGm2').value);
+        const d = parseFloat(document.getElementById('iDeb').value);
+        const dir = parseFloat(document.getElementById('iDir').value);
+        const vit = parseFloat(document.getElementById('iVit').value);
+        const tmp = parseFloat(document.getElementById('iTmp').value);
+
+        const s = sites[currentSite];
+        const t = translations[currentLang];
+
+        document.getElementById('vDir').innerText = isNaN(dir) ? "--" : dir;
+        document.getElementById('vVit').innerText = isNaN(vit) ? "--" : vit;
+        document.getElementById('vTmp').innerText = isNaN(tmp) ? "--" : tmp;
+
+        const br = document.getElementById('status-reg');
+        const ba = document.getElementById('status-atm');
+
+        let dc = "#2ecc71";
+        const er = (g - s.objGrp) / s.objGrp;
+
+        if (g > s.limGm2) {
+            br.innerText = t.regRed + s.limGm2 + "g)";
+            br.className = "status-box bg-red";
+            dc = "#e74c3c";
+        } else if (g > s.objGrp) {
+            if (s.poids >= SEUIL_POIDS && er > TOLERANCE_DERIVE) {
+                br.innerText = t.regOrange;
+                br.className = "status-box bg-orange";
+                dc = "#e67e22";
+            } else {
+                br.innerText = t.regYellow;
+                br.className = "status-box bg-yellow";
+                dc = "#f1c40f";
+            }
+        } else {
+            br.innerText = t.regGreen;
+            br.className = "status-box bg-green";
+            dc = "#2ecc71";
+        }
+
+        factoryMarker.setStyle({ fillColor: dc });
+
+        let pc = "#3498db";
+        const sh = vit < 3 && tmp > 25;
+
+        if (sh && d > 250) {
+            ba.innerText = t.atmRed;
+            ba.className = "status-box bg-red";
+            pc = "#e74c3c";
+        } else if (d > 250 || (sh && d > 30)) {
+            ba.innerText = d > 250 ? t.atmYellowVol : t.atmYellowStag;
+            ba.className = "status-box bg-yellow";
+            pc = "#f1c40f";
+        } else {
+            ba.innerText = t.atmBlue;
+            ba.className = "status-box bg-blue";
+            pc = "#3498db";
+        }
+
+        if (plumeLayer) map.removeLayer(plumeLayer);
+
+        const ang = (dir + 180) % 360;
+        const l = (d / 300) * 0.08 / (vit < 1 ? 1 : vit * 0.5);
+        const tr = v => (v - 90) * Math.PI / 180;
+        const sp = vit < 3 ? 35 : 15;
+
+        const p1 = s.coords;
+        const p2 = [p1[0] + Math.cos(tr(ang - sp)) * l, p1[1] + Math.sin(tr(ang - sp)) * l];
+        const p3 = [p1[0] + Math.cos(tr(ang)) * (l * 1.4), p1[1] + Math.sin(tr(ang)) * (l * 1.4)];
+        const p4 = [p1[0] + Math.cos(tr(ang + sp)) * l, p1[1] + Math.sin(tr(ang + sp)) * l];
+
+        plumeLayer = L.polygon([p1, p2, p3, p4], {
+            color: pc,
+            fillColor: pc,
+            fillOpacity: 0.6,
+            weight: 2
+        }).addTo(map);
+
+        bgMarkers.forEach(m => map.removeLayer(m));
+        bgMarkers = [];
+
+        if (siteAlertMarker) {
+            map.removeLayer(siteAlertMarker);
+            siteAlertMarker = null;
+        }
+
+        Object.keys(sites).forEach(siteKey => {
+            const sTemp = sites[siteKey];
+
+            let isBroken = localStorage.getItem('renault_incin_' + siteKey) === 'true';
+
+            if (localStorage.getItem('renault_incin_' + siteKey) === null) {
+                isBroken = sTemp.incinDef;
+            }
+
+            if (siteKey === currentSite) {
+                if (isBroken) {
+                    const iconHtml = L.divIcon({
+                        html: '<div class="alert-map-icon">⚠️</div>',
+                        className: 'empty-icon',
+                        iconSize: [0, 0]
+                    });
+
+                    siteAlertMarker = L.marker(sTemp.coords, { icon: iconHtml }).addTo(map);
+
+                    siteAlertMarker.bindTooltip(`<b>${siteKey}</b><br><span style="color:red;">⚠️ Panne Incinérateur</span>`, {
+                        direction: 'top',
+                        offset: [8, -15]
+                    });
+                }
+
+                return;
+            }
+
+            const gTemp = parseFloat(localStorage.getItem('renault_gm2_' + siteKey)) || sTemp.defGm2;
+
+            let dotC = "#2ecc71";
+            const err = (gTemp - sTemp.objGrp) / sTemp.objGrp;
+
+            if (gTemp > sTemp.limGm2) {
+                dotC = "#e74c3c";
+            } else if (gTemp > sTemp.objGrp) {
+                if (sTemp.poids >= SEUIL_POIDS && err > TOLERANCE_DERIVE) {
+                    dotC = "#e67e22";
+                } else {
+                    dotC = "#f1c40f";
+                }
+            }
+
+            const mBg = L.circleMarker(sTemp.coords, {
+                radius: 7,
+                color: '#fff',
+                fillColor: dotC,
+                fillOpacity: 0.8,
+                weight: 2
+            }).addTo(map);
+
+            let ttip = `<b>${siteKey}</b><br><span style="font-size:0.8em; color:#666;">${sTemp.mesure === "CEMS" ? "📡 Source: CEMS" : "📋 Source: COFRAC"}</span>`;
+
+            if (isBroken) {
+                ttip += `<br><span style="color:red;">⚠️ Panne Incinérateur</span>`;
+            }
+
+            mBg.bindTooltip(ttip, {
+                direction: 'top',
+                offset: [0, -5]
+            });
+
+            mBg.on('click', () => {
+                document.getElementById('siteSelect').value = siteKey;
+                changeSite();
+            });
+
+            bgMarkers.push(mBg);
+
+            if (isBroken) {
+                const iconHtml = L.divIcon({
+                    html: '<div class="alert-map-icon" style="transform: scale(0.8) translate(8px, -20px);">⚠️</div>',
+                    className: 'empty-icon',
+                    iconSize: [0, 0]
+                });
+
+                const alertMBg = L.marker(sTemp.coords, { icon: iconHtml }).addTo(map);
+
+                alertMBg.bindTooltip(`<b>${siteKey}</b><br><span style="color:red;">⚠️ Panne Incinérateur</span>`, {
+                    direction: 'top',
+                    offset: [8, -15]
+                });
+
+                alertMBg.on('click', () => {
+                    document.getElementById('siteSelect').value = siteKey;
+                    changeSite();
+                });
+
+                bgMarkers.push(alertMBg);
+            }
+        });
+
+        factoryMarker.bringToFront();
+    }
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+``
+    window.onload = init;
+</script>
+
+</body>
+</html>
